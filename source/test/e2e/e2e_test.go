@@ -3,7 +3,7 @@
 // End-to-end tests against a running Quizbox stack (local dev or the cluster).
 //
 //	BASE_URL=http://localhost:8080 go test -tags e2e ./test/e2e/ -v
-//	make e2e BASE_URL=http://192.168.0.240
+//	make e2e BASE_URL=http://192.168.0.10:30080
 //
 // Every HTTP response is checked for X-App-Hops >= 2 (gateway not counted),
 // and the WebSocket hello message is checked the same way.

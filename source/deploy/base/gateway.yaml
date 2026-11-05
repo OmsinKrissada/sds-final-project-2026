@@ -101,10 +101,8 @@ metadata:
   labels:
     app: gateway
     app.kubernetes.io/part-of: quizbox
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: 192.168.0.240
 spec:
-  type: LoadBalancer
+  type: NodePort
   externalTrafficPolicy: Cluster
   selector:
     app: gateway
@@ -112,3 +110,4 @@ spec:
     - name: http
       port: 80
       targetPort: 8080
+      nodePort: 30080

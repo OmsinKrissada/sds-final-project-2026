@@ -3,7 +3,7 @@ SHELL := /bin/bash
 NS := quizbox
 APPS := gateway frontend account quiz game redis
 
-.PHONY: e2e kill-pod help cluster-server cluster-agent metallb db-up db-down images secrets render deploy deploy-ha \
+.PHONY: e2e kill-pod help cluster-server cluster-agent db-up db-down images secrets render deploy deploy-ha \
         prepull where watch undeploy dev dev-stop test web
 
 help: ## Show this help
@@ -15,9 +15,6 @@ cluster-server: ## Install k3s server on this VM (IFACE=ens18 optional; needs su
 cluster-agent: ## Join this Pi as agent: make cluster-agent K3S_URL=https://<vm>:6443 K3S_TOKEN=<token>
 	@test -n "$(K3S_URL)" -a -n "$(K3S_TOKEN)" || { echo "usage: make cluster-agent K3S_URL=https://<vm-ip>:6443 K3S_TOKEN=<token>"; exit 1; }
 	sudo -E cluster/agent.sh "$(K3S_URL)" "$(K3S_TOKEN)"
-
-metallb: ## Install MetalLB + pool 192.168.0.240-250
-	cluster/metallb.sh
 
 db-up: ## Start Postgres (Docker) on this VM
 	@test -f .env || { echo "create .env first: cp .env.example .env"; exit 1; }
@@ -76,8 +73,8 @@ test: ## go test ./...
 web: ## Build the frontend into services/frontend/dist/index.html
 	cd frontend/web && npm ci && npm run build
 
-BASE_URL ?= http://192.168.0.240
-e2e: ## End-to-end tests against a running stack (BASE_URL=http://192.168.0.240 or http://localhost:8080)
+BASE_URL ?= http://192.168.0.10:30080
+e2e: ## End-to-end tests against a running stack (BASE_URL=http://192.168.0.10:30080 or http://localhost:8080)
 	BASE_URL=$(BASE_URL) go test -tags e2e -count=1 -v ./test/e2e/
 
 kill-pod: ## Rehearsal: delete one service's pod and time its replacement (SVC=quiz)
