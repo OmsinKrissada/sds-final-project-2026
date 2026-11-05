@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: quizbox
+resources:
+  - namespace.yaml
+  - postgres-external.yaml
+  - redis.yaml
+  - gateway.yaml
+  - frontend.yaml
+  - account.yaml
+  - quiz.yaml
+  - game.yaml
+
+# Placeholders; deploy/generated (scripts/render.sh) rewrites registry and tag.
+images:
+  - name: quizbox-gateway
+    newName: ghcr.io/OWNER/quizbox-gateway
+    newTag: latest
+  - name: quizbox-frontend
+    newName: ghcr.io/OWNER/quizbox-frontend
+    newTag: latest
+  - name: quizbox-account
+    newName: ghcr.io/OWNER/quizbox-account
+    newTag: latest
+  - name: quizbox-quiz
+    newName: ghcr.io/OWNER/quizbox-quiz
+    newTag: latest
+  - name: quizbox-game
+    newName: ghcr.io/OWNER/quizbox-game
+    newTag: latest

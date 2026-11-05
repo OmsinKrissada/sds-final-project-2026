@@ -1,0 +1,40 @@
+# Postgres for the cluster, run with Docker on the Ubuntu VM (outside k3s).
+#   make db-up / make db-down
+#   (manual: docker compose --env-file .env -f db/docker-compose.yml up -d  -- run from the repo root;
+#    --env-file is needed because compose only auto-reads db/.env for ${...} interpolation)
+#
+# Init scripts run ONLY when ./pgdata is empty (first start), in name order:
+#   01-init.sql  schemas + tables (as the postgres superuser)
+#   02-roles.sh  per-service roles + grants on their own schema
+# To re-run them: make db-down, then `sudo rm -rf db/pgdata`, then make db-up.
+#
+# Remote access: the image listens on all interfaces (listen_addresses='*').
+# pg_hba.conf: the entrypoint appends "host all all all scram-sha-256" when
+# POSTGRES_HOST_AUTH_METHOD is unset, so LAN hosts (the Pis) may connect with a
+# password; nothing is trusted from the network. We deliberately leave
+# POSTGRES_HOST_AUTH_METHOD unset. Verify after first start with:
+#   docker exec quizbox-postgres grep -v '^#' /var/lib/postgresql/data/pg_hba.conf
+# Port 5432 is published on every VM interface; restrict it with ufw to
+# 192.168.0.0/24 if the VM is on an untrusted network.
+name: quizbox-db
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: quizbox-postgres
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${DB_NAME:-quizbox}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./roles.sh:/docker-entrypoint-initdb.d/02-roles.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

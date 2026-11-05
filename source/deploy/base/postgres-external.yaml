@@ -1,0 +1,31 @@
+# Postgres runs in Docker on the VM, outside the cluster. A selector-less
+# Service plus a hand-written EndpointSlice makes it reachable as postgres:5432.
+# The address below is a placeholder: scripts/render.sh patches it with DB_HOST.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/part-of: quizbox
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: postgres
+  labels:
+    kubernetes.io/service-name: postgres
+    app.kubernetes.io/part-of: quizbox
+addressType: IPv4
+ports:
+  - port: 5432
+    protocol: TCP
+endpoints:
+  - addresses:
+      - 192.168.0.10
+    conditions:
+      ready: true

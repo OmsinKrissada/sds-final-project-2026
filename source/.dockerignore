@@ -1,0 +1,17 @@
+.git
+.github
+.env
+.env.*
+**/node_modules
+frontend/web/dist
+bin
+deploy
+cluster
+db
+scripts
+*.md
+Makefile
+docker-compose*.yml
+**/*.log
+# NOT ignored on purpose: services/frontend/dist (embedded placeholder needed
+# for `go build`), frontend/web (Vite sources), go.mod/go.sum, internal, services.

@@ -1,0 +1,153 @@
+# Pre-pulls every Quizbox image onto every agent node (init containers run
+# `/app noop`, which exits 0 immediately) so a rescheduled pod starts without
+# waiting for a registry pull over Pi Wi-Fi/LAN. Rendered and applied via
+# `make prepull` (image names/tags come from .env).
+# App images use imagePullPolicy Always so a re-run refreshes the node cache
+# when TAG is a moving tag like :latest.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: prepull
+  namespace: quizbox
+  labels:
+    app: prepull
+    app.kubernetes.io/part-of: quizbox-tools
+spec:
+  selector:
+    matchLabels:
+      app: prepull
+  template:
+    metadata:
+      labels:
+        app: prepull
+        app.kubernetes.io/part-of: quizbox-tools
+    spec:
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 1
+      tolerations:
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 10
+        - key: node.kubernetes.io/unreachable
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 10
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: pull-gateway
+          image: quizbox-gateway
+          imagePullPolicy: Always
+          command: ["/app", "noop"]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+        - name: pull-frontend
+          image: quizbox-frontend
+          imagePullPolicy: Always
+          command: ["/app", "noop"]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+        - name: pull-account
+          image: quizbox-account
+          imagePullPolicy: Always
+          command: ["/app", "noop"]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+        - name: pull-quiz
+          image: quizbox-quiz
+          imagePullPolicy: Always
+          command: ["/app", "noop"]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+        - name: pull-game
+          image: quizbox-game
+          imagePullPolicy: Always
+          command: ["/app", "noop"]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+        - name: pull-redis
+          image: redis:7.4-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["redis-server", "--version"]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]

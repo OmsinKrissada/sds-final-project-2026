@@ -1,0 +1,7 @@
+node_modules/
+deploy/generated/
+.env
+db/pgdata/
+bin/
+*.log
+dump.rdb

@@ -1,0 +1,75 @@
+# Full local stack: docker compose -f docker-compose.dev.yml up --build
+# Open http://localhost:8080  (demo login: demo@quizbox.local / demo1234)
+# Single DB user (quizbox/quizbox, superuser) - no per-service roles here.
+# Postgres and Redis are published on 127.0.0.1 so `scripts/dev.sh` can use
+# them too: docker compose -f docker-compose.dev.yml up -d postgres redis
+name: quizbox-dev
+x-svc: &svc
+  restart: unless-stopped
+  environment: &env
+    PORT: "8080"
+    ACCOUNT_URL: http://account:8080
+    QUIZ_URL: http://quiz:8080
+    GAME_URL: http://game:8080
+    FRONTEND_URL: http://frontend:8080
+    REDIS_ADDR: redis:6379
+    DATABASE_URL: postgres://quizbox:quizbox@postgres:5432/quizbox?sslmode=disable
+    SEED_DEMO: "true"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: quizbox
+      POSTGRES_PASSWORD: quizbox
+      POSTGRES_DB: quizbox
+    ports: ["127.0.0.1:5432:5432"]
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quizbox -d quizbox"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports: ["127.0.0.1:6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  account:
+    <<: *svc
+    build: { context: ., dockerfile: services/account/Dockerfile }
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  quiz:
+    <<: *svc
+    build: { context: ., dockerfile: services/quiz/Dockerfile }
+    depends_on:
+      postgres: { condition: service_healthy }
+      account: { condition: service_started }
+
+  game:
+    <<: *svc
+    build: { context: ., dockerfile: services/game/Dockerfile }
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  frontend:
+    <<: *svc
+    build: { context: ., dockerfile: services/frontend/Dockerfile }
+    depends_on: [account, game]
+
+  gateway:
+    <<: *svc
+    build: { context: ., dockerfile: services/gateway/Dockerfile }
+    ports: ["8080:8080"]
+    depends_on: [account, quiz, game, frontend]

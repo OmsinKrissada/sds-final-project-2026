@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+# Stateless services get 2 replicas. redis stays at 1 (single in-memory
+# instance; game state can be restored from Postgres snapshots).
+replicas:
+  - name: gateway
+    count: 2
+  - name: frontend
+    count: 2
+  - name: account
+    count: 2
+  - name: quiz
+    count: 2
+  - name: game
+    count: 2
